@@ -20,14 +20,14 @@ namespace TKKernels
 
 
 		// ----- LAMBDA -----
-		public BindingList<ImageObject> Images => bindingImages;
+		public BindingList<ImageObject> Images => this.bindingImages;
 
 		public int ImageCount => this.Images.Count;
 		public long[] ImagePointers => this.Images.Select(x => x.Ptr).ToArray();
 
 		public ImageObject? CurrentImage =>
-			ImagesList.SelectedIndex != -1 && ImagesList.SelectedIndex < ImageCount ?
-			this.Images[ImagesList.SelectedIndex] : null;
+			this.ImagesList.SelectedIndex != -1 && this.ImagesList.SelectedIndex < this.ImageCount ?
+			this.Images[this.ImagesList.SelectedIndex] : null;
 
 
 
@@ -46,7 +46,7 @@ namespace TKKernels
 			this.ImagesList.SelectedIndex = -1;
 
 			// Register events
-			this.ImagesList.MouseDown += (s, e) => RemoveImageOnRightClick(this.ImagesList.SelectedIndex);
+			this.ImagesList.MouseDown += (s, e) => this.RemoveImageOnRightClick(this.ImagesList.SelectedIndex);
 
 		}
 
@@ -207,8 +207,8 @@ namespace TKKernels
 			// Check dimensions
 			if (width < 1 || height < 1)
 			{
-				Ptr = 0;
-				Img = null;
+				this.Ptr = 0;
+				this.Img = null;
 				return null;
 			}
 
@@ -232,7 +232,7 @@ namespace TKKernels
 
 			// Update image
 			this.Img = bmp;
-			Ptr = 0;
+			this.Ptr = 0;
 
 			// Return image
 			return bmp;

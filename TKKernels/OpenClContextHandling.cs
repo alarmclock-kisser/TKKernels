@@ -40,14 +40,14 @@ namespace TKKernels
 			this.DevicesCombo = devicesCombo ?? new ComboBox();
 
 			// Register events
-			DevicesCombo.SelectedIndexChanged += (s, e) => InitializeContext(DevicesCombo.SelectedIndex);
+			this.DevicesCombo.SelectedIndexChanged += (s, e) => this.InitializeContext(this.DevicesCombo.SelectedIndex);
 
 			// Get devices
-			Devices = GetDevices();
-			Log("OpenCL Devices loaded", Devices.Count + " platforms", 1);
+			this.Devices = this.GetDevices();
+			this.Log("OpenCL Devices loaded", this.Devices.Count + " platforms", 1);
 
 			// Fill combo and set device
-			FillDevicesCombo(-1);
+			this.FillDevicesCombo(-1);
 		}
 
 
@@ -76,12 +76,12 @@ namespace TKKernels
 
 			if (update)
 			{
-				LogBox.Items[^1] = msg;
+				this.LogBox.Items[^1] = msg;
 			}
 			else
 			{
-				LogBox.Items.Add(msg);
-				LogBox.SelectedIndex = LogBox.Items.Count - 1;
+				this.LogBox.Items.Add(msg);
+				this.LogBox.SelectedIndex = this.LogBox.Items.Count - 1;
 			}
 		}
 
@@ -93,7 +93,7 @@ namespace TKKernels
 			var err = CL.GetPlatformIds(out CLPlatform[] platforms);
 			if (err != CLResultCode.Success)
 			{
-				Log("Error getting platforms", err.ToString());
+				this.Log("Error getting platforms", err.ToString());
 				return [];
 			}
 
@@ -104,7 +104,7 @@ namespace TKKernels
 				err = CL.GetDeviceIds(platform, type ?? DeviceType.All, out CLDevice[] devs);
 				if (err != CLResultCode.Success)
 				{
-					Log("Error getting devices", err.ToString());
+					this.Log("Error getting devices", err.ToString());
 					return [];
 				}
 				devices[platform] = devs;
@@ -116,7 +116,7 @@ namespace TKKernels
 		public List<CLDevice> GetDevicesList(DeviceType? type = null)
 		{
 			List<CLDevice> devices = [];
-			foreach (var devs in Devices.Values)
+			foreach (var devs in this.Devices.Values)
 			{
 				devices.AddRange(devs);
 			}
@@ -127,21 +127,21 @@ namespace TKKernels
 		public void FillDevicesCombo(int set = -1)
 		{
 			// Clear
-			DevicesCombo.Items.Clear();
+			this.DevicesCombo.Items.Clear();
 			
 			// Fill
-			foreach (var platform in Devices.Keys)
+			foreach (var platform in this.Devices.Keys)
 			{
-				foreach (var device in Devices[platform])
+				foreach (var device in this.Devices[platform])
 				{
-					DevicesCombo.Items.Add(GetPlatformName(platform) + " - " + GetDeviceName(device));
+					this.DevicesCombo.Items.Add(this.GetPlatformName(platform) + " - " + this.GetDeviceName(device));
 				}
 			}
 
 			// Set
-			if (set >= 0 && set < DevicesCombo.Items.Count)
+			if (set >= 0 && set < this.DevicesCombo.Items.Count)
 			{
-				DevicesCombo.SelectedIndex = set;
+				this.DevicesCombo.SelectedIndex = set;
 			}
 		}
 
@@ -153,7 +153,7 @@ namespace TKKernels
 			var err = CL.GetDeviceInfo(device, DeviceInfo.Name, out byte[] name);
 			if (err != CLResultCode.Success)
 			{
-				Log("Error getting device name", err.ToString());
+				this.Log("Error getting device name", err.ToString());
 				return "";
 			}
 
@@ -168,7 +168,7 @@ namespace TKKernels
 			var err = CL.GetDeviceInfo(device, DeviceInfo.Type, out byte[] type);
 			if (err != CLResultCode.Success)
 			{
-				Log("Error getting device type", err.ToString());
+				this.Log("Error getting device type", err.ToString());
 				return "";
 			}
 
@@ -182,7 +182,7 @@ namespace TKKernels
 			var err = CL.GetPlatformInfo(platform, PlatformInfo.Name, out byte[] name);
 			if (err != CLResultCode.Success)
 			{
-				Log("Error getting platform name", err.ToString());
+				this.Log("Error getting platform name", err.ToString());
 				return "";
 			}
 
@@ -196,7 +196,7 @@ namespace TKKernels
 			var err = CL.GetPlatformInfo(platform, PlatformInfo.Version, out byte[] version);
 			if (err != CLResultCode.Success)
 			{
-				Log("Error getting platform vendor", err.ToString());
+				this.Log("Error getting platform vendor", err.ToString());
 				return "";
 			}
 
@@ -207,13 +207,13 @@ namespace TKKernels
 		public List<string> GetDeviceNames()
 		{
 			// Get devices
-			List<CLDevice> devices = GetDevicesList();
+			List<CLDevice> devices = this.GetDevicesList();
 
 			// Get names
 			List<string> names = [];
 			foreach (var device in devices)
 			{
-				names.Add(GetDeviceName(device));
+				names.Add(this.GetDeviceName(device));
 			}
 
 			return names;
@@ -224,59 +224,59 @@ namespace TKKernels
 		public void InitializeContext(int deviceIndex)
 		{
 			// Void previous
-			Dispose();
+			this.Dispose();
 
 			// Get devices
-			List<CLDevice> devices = GetDevicesList();
+			List<CLDevice> devices = this.GetDevicesList();
 
 			// Check index
 			if (deviceIndex < 0 || deviceIndex >= devices.Count)
 			{
-				Log("No OpenCL Context initialized", "Invalid device index", 1);
+				this.Log("No OpenCL Context initialized", "Invalid device index", 1);
 				return;
 			}
 
 			// Get device
-			Dev = devices[deviceIndex];
+			this.Dev = devices[deviceIndex];
 
 			// Create context -> Ctx
-			Ctx = CL.CreateContext(0, [Dev.Value], 0, 0, out var err);
+			this.Ctx = CL.CreateContext(0, [this.Dev.Value], 0, 0, out var err);
 			if (err != CLResultCode.Success)
 			{
-				Log("Error creating context", err.ToString());
-				Ctx = null;
+				this.Log("Error creating context", err.ToString());
+				this.Ctx = null;
 				return;
 			}
 
 			// Create objects
-			MemH = new OpenClMemoryHandling(this);
-			KernelH = new OpenClKernelHandling(this);
+			this.MemH = new OpenClMemoryHandling(this);
+			this.KernelH = new OpenClKernelHandling(this);
 
 			// Log
-			Log("OpenCL Context initialized", GetDeviceName(Dev.Value), 1);
+			this.Log("OpenCL Context initialized", this.GetDeviceName(this.Dev.Value), 1);
 		}
 
 		public void Dispose()
 		{
 			// Void context
-			if (Ctx != null)
+			if (this.Ctx != null)
 			{
-				CL.ReleaseContext(Ctx.Value);
-				Ctx = null;
+				CL.ReleaseContext(this.Ctx.Value);
+				this.Ctx = null;
 			}
 
 			// Void device
-			if (Dev != null)
+			if (this.Dev != null)
 			{
-				CL.ReleaseDevice(Dev.Value);
-				Dev = null;
+				CL.ReleaseDevice(this.Dev.Value);
+				this.Dev = null;
 			}
 
 			// Dispose objects
-			MemH?.Dispose();
-			MemH = null;
-			KernelH?.Dispose();
-			KernelH = null;
+			this.MemH?.Dispose();
+			this.MemH = null;
+			this.KernelH?.Dispose();
+			this.KernelH = null;
 		}
 
 	}

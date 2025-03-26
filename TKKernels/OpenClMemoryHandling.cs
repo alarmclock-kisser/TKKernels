@@ -17,15 +17,15 @@ namespace TKKernels
 
 
 		// ----- ----- ----- LAMBDA ----- ----- ----- \\
-		private string Repopath => ContextH.Repopath;
-		private ListBox LogBox => ContextH.LogBox;
+		private string Repopath => this.ContextH.Repopath;
+		private ListBox LogBox => this.ContextH.LogBox;
 
 
-		private CLContext? Ctx => ContextH.Ctx;
-		private CLDevice? Dev => ContextH.Dev;
+		private CLContext? Ctx => this.ContextH.Ctx;
+		private CLDevice? Dev => this.ContextH.Dev;
 
 
-		public long[] Pointers => Buffers.Select(b => (long) b.Key.FirstOrDefault().GetHashCode()).ToArray();
+		public long[] Pointers => this.Buffers.Select(b => (long) b.Key.FirstOrDefault().GetHashCode()).ToArray();
 
 		// ----- ----- ----- CONSTRUCTOR ----- ----- ----- \\
 		public OpenClMemoryHandling(OpenClContextHandling contextH)
@@ -34,13 +34,13 @@ namespace TKKernels
 			this.ContextH = contextH;
 
 			// Create CLCommandQueue
-			if (Ctx != null && Dev != null)
+			if (this.Ctx != null && this.Dev != null)
 			{
-				Que = CL.CreateCommandQueueWithProperties(Ctx.Value, Dev.Value, 0, out CLResultCode err);
+				this.Que = CL.CreateCommandQueueWithProperties(this.Ctx.Value, this.Dev.Value, 0, out CLResultCode err);
 				if (err != CLResultCode.Success)
 				{
-					Log("Error creating command queue", err.ToString());
-					Que = null;
+					this.Log("Error creating command queue", err.ToString());
+					this.Que = null;
 				}
 			}
 
@@ -71,12 +71,12 @@ namespace TKKernels
 
 			if (update)
 			{
-				LogBox.Items[^1] = msg;
+				this.LogBox.Items[^1] = msg;
 			}
 			else
 			{
-				LogBox.Items.Add(msg);
-				LogBox.SelectedIndex = LogBox.Items.Count - 1;
+				this.LogBox.Items.Add(msg);
+				this.LogBox.SelectedIndex = this.LogBox.Items.Count - 1;
 			}
 		}
 
@@ -85,29 +85,29 @@ namespace TKKernels
 		public void Dispose()
 		{
 			// Free every buffer (group)
-			long[] pointers = Pointers;
+			long[] pointers = this.Pointers;
 			for (int i = 0; i < pointers.Length; i++)
 			{
-				FreeBuffers(pointers[i]);
+				this.FreeBuffers(pointers[i]);
 			}
 
 			// Free command queue
-			if (Que != null)
+			if (this.Que != null)
 			{
-				CLResultCode err = CL.ReleaseCommandQueue(Que.Value);
+				CLResultCode err = CL.ReleaseCommandQueue(this.Que.Value);
 				if (err != CLResultCode.Success)
 				{
-					Log("Error releasing command queue", err.ToString());
+					this.Log("Error releasing command queue", err.ToString());
 				}
 			}
-			Que = null;
+			this.Que = null;
 
 		}
 
 		public void FreeBuffers(long ptr)
 		{
 			// Get buffers
-			CLBuffer[] buffers = FindBuffers(ptr);
+			CLBuffer[] buffers = this.FindBuffers(ptr);
 			if (buffers.Length == 0)
 			{
 				return;
@@ -121,16 +121,16 @@ namespace TKKernels
 					CLResultCode err = CL.ReleaseMemoryObject(buffers[i]);
 					if (err != CLResultCode.Success)
 					{
-						Log("Error freeing buffer", err.ToString());
+						this.Log("Error freeing buffer", err.ToString());
 					}
 				}
 
 				// Remove from Buffers & Types
-				Buffers.Remove(buffers);
+				this.Buffers.Remove(buffers);
 			}
 			catch (Exception e)
 			{
-				Log("Error freeing buffers", e.Message);
+				this.Log("Error freeing buffers", e.Message);
 			}
 		}
 
@@ -139,16 +139,16 @@ namespace TKKernels
 		public long GetMemoryTotal()
 		{
 			// Abort if no Dev
-			if (Dev == null)
+			if (this.Dev == null)
 			{
 				return 0;
 			}
 
 			// Get memory attribute for Dev or Ctx ...
-			CLResultCode err = CL.GetDeviceInfo(Dev.Value, DeviceInfo.GlobalMemorySize, out byte[]? res);
+			CLResultCode err = CL.GetDeviceInfo(this.Dev.Value, DeviceInfo.GlobalMemorySize, out byte[]? res);
 			if (err != CLResultCode.Success || res == null)
 			{
-				Log("Error getting memory total", err.ToString());
+				this.Log("Error getting memory total", err.ToString());
 				return -1;
 			}
 			return BitConverter.ToInt64(res, 0);
@@ -157,14 +157,14 @@ namespace TKKernels
 		public long GetMemoryAllocated<T>() where T : unmanaged
 		{
 			// Get all pointers & type size
-			long[] pointers = Pointers;
+			long[] pointers = this.Pointers;
 			int typeSize = Marshal.SizeOf<T>();
 
 			// Get size of every buffer & add up
 			long alloc = 0;
 			for (int i = 0; i < pointers.Length; i++)
 			{
-				alloc += GetBuffersSize(pointers[i]) * typeSize;
+				alloc += this.GetBuffersSize(pointers[i]) * typeSize;
 			}
 
 			// Return
@@ -173,17 +173,17 @@ namespace TKKernels
 
 		public string GetBufferPointerString(long ptr)
 		{
-			CLBuffer? buffer = FindBuffers(ptr).FirstOrDefault();
+			CLBuffer? buffer = this.FindBuffers(ptr).FirstOrDefault();
 			if (buffer == null)
 			{
-				Log("Error getting buffer pointer", "No buffer found with ptr " + ptr);
+				this.Log("Error getting buffer pointer", "No buffer found with ptr " + ptr);
 				return "N/A";
 			}
 
 			CLResultCode err = CL.GetMemObjectInfo(buffer.Value, MemoryObjectInfo.HostPointer, out byte[]? res);
 			if (err != CLResultCode.Success || res == null)
 			{
-				Log("Error getting buffer pointer", err.ToString());
+				this.Log("Error getting buffer pointer", err.ToString());
 				return "N/A" ;
 			}
 
@@ -194,24 +194,24 @@ namespace TKKernels
 		public CLBuffer[] FindBuffers(long ptr)
 		{
 			// Find buffer group with first buffers hashCode == ptr
-			return Buffers.FirstOrDefault(b => b.Key.FirstOrDefault().GetHashCode() == ptr).Key;
+			return this.Buffers.FirstOrDefault(b => b.Key.FirstOrDefault().GetHashCode() == ptr).Key;
 		}
 		
 		public int[] FindLengths(long ptr)
 		{
 			// Find buffer group with first buffers hashCode == ptr
-			return Buffers.FirstOrDefault(b => b.Key.FirstOrDefault().GetHashCode() == ptr).Value;
+			return this.Buffers.FirstOrDefault(b => b.Key.FirstOrDefault().GetHashCode() == ptr).Value;
 		}
 
 		public int GetBuffersCount(int ptr)
 		{
-			return FindBuffers(ptr).Length;
+			return this.FindBuffers(ptr).Length;
 		}
 
 		public long GetBuffersSize(long ptr)
 		{
 			// Get buffers
-			CLBuffer[] buffers = FindBuffers(ptr);
+			CLBuffer[] buffers = this.FindBuffers(ptr);
 			long total = 0;
 
 			// Get size of every buffer & add up
@@ -220,7 +220,7 @@ namespace TKKernels
 				CLResultCode err = CL.GetMemObjectInfo(buffers[i], MemoryObjectInfo.Size, out byte[]? res);
 				if (err != CLResultCode.Success || res == null)
 				{
-					Log("Error getting buffer size", err.ToString());
+					this.Log("Error getting buffer size", err.ToString());
 					continue;
 				}
 				long size = BitConverter.ToInt64(res, 0);
@@ -238,7 +238,7 @@ namespace TKKernels
 			long ptr = 0;
 
 			// Abort if no chunks or no context
-			if (chunks.Count == 0 || Ctx == null)
+			if (chunks.Count == 0 || this.Ctx == null)
 			{
 				return ptr;
 			}
@@ -257,16 +257,16 @@ namespace TKKernels
 			for (int i = 0; i < lengths.Length; i++)
 			{
 				// Create buffer
-				buffers[i] = CL.CreateBuffer<T>(Ctx.Value, MemoryFlags.CopyHostPtr | MemoryFlags.ReadWrite, chunks[i], out CLResultCode err);
+				buffers[i] = CL.CreateBuffer<T>(this.Ctx.Value, MemoryFlags.CopyHostPtr | MemoryFlags.ReadWrite, chunks[i], out CLResultCode err);
 				if (err != CLResultCode.Success)
 				{
-					Log("Error creating buffer", err.ToString());
+					this.Log("Error creating buffer", err.ToString());
 					return ptr;
 				}
 			}
 
 			// Add to Buffers & Types
-			Buffers.Add(buffers, lengths.Select(s => (int) s).ToArray());
+			this.Buffers.Add(buffers, lengths.Select(s => (int) s).ToArray());
 
 			// Get hashCode of first buffer
 			ptr = buffers.FirstOrDefault().GetHashCode();
@@ -282,14 +282,14 @@ namespace TKKernels
 			List<T[]> chunks = [];
 
 			// Abort if no context
-			if (Ctx == null || Que == null)
+			if (this.Ctx == null || this.Que == null)
 			{
 				return chunks;
 			}
 
 			// Get buffers
-			CLBuffer[] buffers = FindBuffers(ptr);
-			int[] lengths = FindLengths(ptr);
+			CLBuffer[] buffers = this.FindBuffers(ptr);
+			int[] lengths = this.FindLengths(ptr);
 			if (buffers.Length == 0 || lengths.Length == 0 || lengths.Any(s => s == 0))
 			{
 				return chunks;
@@ -302,10 +302,10 @@ namespace TKKernels
 				T[] chunk = new T[lengths[i]];
 
 				// Pull data
-				CLResultCode err = CL.EnqueueReadBuffer<T>(Que.Value, buffers[i], true, 0,  chunk, null, out CLEvent evt);
+				CLResultCode err = CL.EnqueueReadBuffer<T>(this.Que.Value, buffers[i], true, 0,  chunk, null, out CLEvent evt);
 				if (err != CLResultCode.Success)
 				{
-					Log("Error pulling buffer", err.ToString());
+					this.Log("Error pulling buffer", err.ToString());
 					return chunks;
 				}
 				
@@ -314,7 +314,7 @@ namespace TKKernels
 			}
 
 			// Free buffers
-			FreeBuffers(ptr);
+			this.FreeBuffers(ptr);
 
 			// Return
 			return chunks;
