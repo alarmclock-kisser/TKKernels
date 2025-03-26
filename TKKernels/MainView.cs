@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace TKKernels
 {
 	public partial class MainView : Form
@@ -39,6 +41,7 @@ namespace TKKernels
 			ContextH = new OpenClContextHandling(Repopath, listBox_log, comboBox_devices);
 
 			// Register events
+			comboBox_devices.SelectedIndexChanged += (s, e) => ToggleUI();
 			pictureBox_view.DoubleClick += (s, e) => ImportImage();
 			panel_view.DoubleClick += (s, e) => ImportImage();
 			listBox_images.DoubleClick += (s, e) => MoveImage();
@@ -47,6 +50,8 @@ namespace TKKernels
 			pictureBox_view.MouseDown += pictureBox_view_MouseDown;
 			pictureBox_view.MouseMove += pictureBox_view_MouseMove;
 			pictureBox_view.MouseUp += pictureBox_view_MouseUp;
+			listBox_log.DoubleClick += (s, e) => ExportLogLineToClipboard(listBox_log.SelectedIndex);
+			listBox_log.Click += (s, e) => ExportLogFullToFile();
 
 
 			// Start UI
@@ -94,7 +99,7 @@ namespace TKKernels
 			label_memory.Text = "Memory: " + used + " / " + total + " MB";
 
 			// Size label
-			label_size.Text = "Size: " +( Img?.Width ?? 0) + " x " + (Img?.Height ?? 0) + " px, " + (Img?.Size ?? 0) / 1024 + " KB";
+			label_size.Text = "Size: " + (Img?.Width ?? 0) + " x " + (Img?.Height ?? 0) + " px, " + (Img?.Size ?? 0) / 1024 + " KB";
 
 		}
 
@@ -108,6 +113,56 @@ namespace TKKernels
 
 			// Set index
 			comboBox_devices.SelectedIndex = index;
+		}
+
+		private void ExportLogLineToClipboard(int index)
+		{
+			// Check index
+			if (index < 0 || index >= listBox_log.Items.Count)
+			{
+				return;
+			}
+
+			// Get line
+			string line = listBox_log.Items[index].ToString() ?? ("Error exporting log line #" + (index + 1) + " / " + listBox_log.Items.Count);
+
+			// Copy to clipboard
+			Clipboard.SetText(line);
+
+			// MsgBox
+			MessageBox.Show("Log line #" + (index + 1) + " / " + listBox_log.Items.Count, "Copied to clipboard", MessageBoxButtons.OK, MessageBoxIcon.Information);
+		}
+
+		private void ExportLogFullToFile(bool clipboard = false)
+		{
+			// Check CTRL down
+			if (ModifierKeys != Keys.Control)
+			{
+				return;
+			}
+
+			// Get log .TXT path
+			string path = Path.Combine(Repopath, "Logs", ("log_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".txt"));
+
+			// Get all log lines
+			string[] lines = new string[listBox_log.Items.Count];
+			for (int i = 0; i < listBox_log.Items.Count; i++)
+			{
+				lines[i] = listBox_log.Items[i].ToString() ?? "\n";
+			}
+			string linesString = string.Join("\n", lines);
+
+			// Copy to clipboard
+			if (clipboard)
+			{
+				Clipboard.SetText(linesString);
+			}
+
+			// Write to file
+			File.WriteAllText(path, linesString);
+
+			// MsgBox
+			MessageBox.Show("Exported to " + path, "Log exported to file", MessageBoxButtons.OK, MessageBoxIcon.Information);
 		}
 
 
@@ -229,9 +284,10 @@ namespace TKKernels
 			numericUpDown_zoom.Value = newZoom;
 		}
 
-
-
-		
-
+		private void button_compileAll_Click(object sender, EventArgs e)
+		{
+			// Call KernelH
+			ContextH.KernelH?.ReCompileAll(true);
+		}
 	}
 }

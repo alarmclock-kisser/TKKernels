@@ -36,9 +36,12 @@
 			numericUpDown_zoom = new NumericUpDown();
 			label_memory = new Label();
 			label_size = new Label();
+			button_compileAll = new Button();
+			groupBox_kernel = new GroupBox();
 			((System.ComponentModel.ISupportInitialize) pictureBox_view).BeginInit();
 			panel_view.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize) numericUpDown_zoom).BeginInit();
+			groupBox_kernel.SuspendLayout();
 			SuspendLayout();
 			// 
 			// comboBox_devices
@@ -115,11 +118,32 @@
 			label_size.TabIndex = 7;
 			label_size.Text = "Size: ";
 			// 
+			// button_compileAll
+			// 
+			button_compileAll.Location = new Point(211, 70);
+			button_compileAll.Name = "button_compileAll";
+			button_compileAll.Size = new Size(75, 23);
+			button_compileAll.TabIndex = 8;
+			button_compileAll.Text = "Compile all";
+			button_compileAll.UseVisualStyleBackColor = true;
+			button_compileAll.Click += button_compileAll_Click;
+			// 
+			// groupBox_kernel
+			// 
+			groupBox_kernel.Controls.Add(button_compileAll);
+			groupBox_kernel.Location = new Point(12, 530);
+			groupBox_kernel.Name = "groupBox_kernel";
+			groupBox_kernel.Size = new Size(292, 99);
+			groupBox_kernel.TabIndex = 9;
+			groupBox_kernel.TabStop = false;
+			groupBox_kernel.Text = "Kernels";
+			// 
 			// MainView
 			// 
 			AutoScaleDimensions = new SizeF(7F, 15F);
 			AutoScaleMode = AutoScaleMode.Font;
 			ClientSize = new Size(834, 961);
+			Controls.Add(groupBox_kernel);
 			Controls.Add(label_size);
 			Controls.Add(label_memory);
 			Controls.Add(numericUpDown_zoom);
@@ -128,10 +152,11 @@
 			Controls.Add(listBox_log);
 			Controls.Add(comboBox_devices);
 			Name = "MainView";
-			Text = "Form1";
+			Text = "OpenCL Kernels with Precompiler (WinForms)";
 			((System.ComponentModel.ISupportInitialize) pictureBox_view).EndInit();
 			panel_view.ResumeLayout(false);
 			((System.ComponentModel.ISupportInitialize) numericUpDown_zoom).EndInit();
+			groupBox_kernel.ResumeLayout(false);
 			ResumeLayout(false);
 			PerformLayout();
 		}
@@ -146,5 +171,7 @@
 		private NumericUpDown numericUpDown_zoom;
 		private Label label_memory;
 		private Label label_size;
+		private Button button_compileAll;
+		private GroupBox groupBox_kernel;
 	}
 }

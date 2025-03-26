@@ -1,4 +1,5 @@
 ﻿using OpenTK.Compute.OpenCL;
+using System.Text;
 
 namespace TKKernels
 {
@@ -41,7 +42,7 @@ namespace TKKernels
 			// Set attributes
 			this.ContextH = openClContextHandling;
 
-
+			
 		}
 
 
@@ -84,7 +85,7 @@ namespace TKKernels
 
 
 
-		// Load & Get
+		// Load & Info
 		public string? ReadKernelFile(string filePath)
 		{
 			// Try read file
@@ -127,64 +128,33 @@ namespace TKKernels
 			}
 
 			// Check every bracked paired ()
-			int openCount = 0;
-			int closeCount = 0;
+			int openCount = kernelString.Count(c => c == '(');
+			int closeCount = kernelString.Count(c => c == ')');
 			foreach (char c in kernelString)
+			if (closeCount != openCount || closeCount == 0)
 			{
-				if (c == '(')
-				{
-					openCount++;
-				}
-				else if (c == ')')
-				{
-					closeCount++;
-				}
-				if (closeCount != openCount || closeCount == 0)
-				{
-					Log("Error precompiling kernel string", "Bracket not paired");
-					return null;
-				}
+				Log("Error precompiling kernel string: ()-brackets not paired or 0", openCount + " open, " + closeCount + " close");
+				return null;
 			}
 
 			// Check every bracked paired []
-			openCount = 0;
-			closeCount = 0;
-			foreach (char c in kernelString)
-				{
-					if (c == '[')
-					{
-						openCount++;
-					}
-					else if (c == ']')
-					{
-						closeCount++;
-					}
-					if (closeCount != openCount || closeCount == 0)
-					{
-						Log("Error precompiling kernel string", "Bracket not paired");
-						return null;
-					}
-				}
-			
+			openCount = kernelString.Count(c => c == '[');
+			closeCount = kernelString.Count(c => c == ']');
+			if (closeCount != openCount || closeCount == 0)
+			{
+				Log("Error precompiling kernel string: []-brackets not paired or 0", openCount + " open, " + closeCount + " close");
+				return null;
+			}
+
+
 			// Check brackets paired {}
-			openCount = 0;
-			closeCount = 0;
-			foreach (char c in kernelString)
-				{
-					if (c == '{')
-					{
-						openCount++;
-					}
-					else if (c == '}')
-					{
-						closeCount++;
-					}
-					if (closeCount != openCount || closeCount == 0)
-					{
-						Log("Error precompiling kernel string", "Bracket not paired {}");
-						return null;
-					}
-				}
+			openCount = kernelString.Count(c => c == '{');
+			closeCount = kernelString.Count(c => c == '}');
+			if (closeCount != openCount || closeCount == 0)
+			{
+				Log("Error precompiling kernel string: {}-brackets not paired or 0", openCount + " open, " + closeCount + " close");
+				return null;
+			}
 
 			// Check if contains " int " (mandatory for input array length)
 			if (!kernelString.Contains(" int "))
@@ -286,7 +256,88 @@ namespace TKKernels
 
 		public Type GetInputType()
 		{
+			// STUB
 			return typeof(int);
+		}
+
+		public CLKernel? GetKernel(string kernelName)
+		{
+			// Get kernel
+			CLKernel? kernel = Kernels.FirstOrDefault(k => GetKernelName(k) == kernelName);
+			
+			// Return
+			return kernel;
+		}
+
+		public string GetKernelName(CLKernel kernel)
+		{
+			// Get kernel info
+			CLResultCode err = CL.GetKernelInfo(kernel, KernelInfo.FunctionName, out byte[]? name);
+			if (err != CLResultCode.Success || name == null || name.Length == 0)
+			{
+				Log("Error getting kernel info KernelName", err.ToString());
+			}
+
+			// Return
+			return Encoding.UTF8.GetString(name ?? []);
+		}
+
+		public int GetKernelParamCount(CLKernel kernel)
+		{
+			// Get kernel info
+			CLResultCode err = CL.GetKernelInfo(kernel, KernelInfo.NumberOfArguments, out byte[]? count);
+			if (err != CLResultCode.Success || count == null || count.Length == 0)
+			{
+				Log("Error getting kernel info ParamCount", err.ToString());
+				return 0;
+			}
+
+			// Return
+			return BitConverter.ToInt32(count ?? [], 0);
+		}
+
+		public int GetKernelRefCount(CLKernel kernel)
+		{
+			// Get kernel info
+			CLResultCode err = CL.GetKernelInfo(kernel, KernelInfo.ReferenceCount, out byte[]? count);
+			if (err != CLResultCode.Success || count == null)
+			{
+				Log("Error getting kernel info RefCount", err.ToString());
+				return 0;
+			}
+
+			// Return
+			return BitConverter.ToInt32(count ?? [], 0);
+		}
+
+		public string[] LogEveryKernel()
+		{
+			// Log every kernel file (.k) found at Resources/Kernels
+			List<string> entries = [];
+			foreach (string file in KernelPaths)
+			{
+				Log("Found kernel file: '" + Path.GetFileName(file) + "'");
+				entries.Add("Found kernel file: '" + Path.GetFileName(file) + "'");
+			}
+
+			// Log every compiled kernel (Kernels) info
+			CLKernel[] kernels = Kernels.ToArray();
+			foreach (CLKernel kernel in kernels)
+			{
+				string name = GetKernelName(kernel);
+				int paramCount = GetKernelParamCount(kernel);
+				int refCount = GetKernelRefCount(kernel);
+				Log("Compiled kernel: '" + name + "'", "Parameters: " + paramCount + ", References: " + refCount);
+				string entry = "Compiled kernel: '" + name + "', Parameters: " + paramCount + ", References: " + refCount;
+				entries.Add(entry);
+			}
+
+			// Log total found / compiled
+			Log("Total kernels compiled: " + Kernels.Count, KernelPaths.Length + " files found");
+
+
+			// Return
+			return entries.ToArray();
 		}
 
 
@@ -297,7 +348,7 @@ namespace TKKernels
 			string? kernelName;
 
 			// Read file if path
-			if (File.Exists(kernelString))
+			if (File.Exists(kernelString) && Path.GetExtension(kernelString) == ".k")
 			{
 				kernelString = ReadKernelFile(kernelString);
 
@@ -306,14 +357,14 @@ namespace TKKernels
 			}
 
 			// Abort if kernelString null
-			if (kernelString == null)
+			if (kernelString == null || kernelString == "" || kernelString.Length == 0)
 			{
-				Log("Error reading kernel file");
+				Log("Error reading kernel file", "KernelString was null or empty");
 				return null;
 			}
 
 			// Abort if no Ctx
-			if (Ctx == null)
+			if (Ctx == null || Dev == null)
 			{
 				Log("No context to compile kernel");
 				return null;
@@ -329,26 +380,83 @@ namespace TKKernels
 
 			// Try compile kernel
 			CLKernel? kernel = null;
-			try
+			
+			// Get program
+			CLProgram? program = CL.CreateProgramWithSource(Ctx.Value, kernelString, out CLResultCode err);
+			if (err != CLResultCode.Success || program == null)
 			{
-				// Get program
-				CLProgram program = CL.CreateProgramWithSource(Ctx.Value, kernelString, out CLResultCode err);
-				if (err != CLResultCode.Success)
-				{
-					Log("Error creating program", err.ToString());
-				}
-
-				// Build kernel
-				kernel = CL.CreateKernel(program, kernelName, out err);
-				if (err != CLResultCode.Success)
-				{
-					Log("Error creating kernel", err.ToString());
-				}
-
+				Log("Error creating program (1)", err.ToString());
+				return null;
 			}
-			catch (Exception e)
+
+			// Create callback
+			CL.ClEventCallback callback = (ev, evStatus) =>
 			{
-				Log("Error compiling kernel", e.Message);
+				Log("Callback", "Event status: " + evStatus.ToString());
+			};
+
+			// Build program
+			err = CL.BuildProgram(program.Value, [Dev.Value], "",callback);
+			if (err != CLResultCode.Success)
+			{
+				Log("Error building program (2)", err.ToString());
+				return null;
+			}
+
+			// Build info options (CLOptions)
+			err = CL.GetProgramBuildInfo(program.Value, Dev.Value, ProgramBuildInfo.Options, out byte[]? buildOptions);
+			if (err != CLResultCode.Success || buildOptions == null)
+			{
+				Log("Error getting program build info (3.1)", err.ToString());
+				return null;
+			}
+			if (buildOptions.Length > 0)
+			{
+				Log("Program build options", Encoding.UTF8.GetString(buildOptions));
+			}
+			else
+			{
+				Log("No build options available");
+			}
+
+			// Build info status
+			err = CL.GetProgramBuildInfo(program.Value, Dev.Value, ProgramBuildInfo.Status, out byte[]? buildStatus);
+			if (err != CLResultCode.Success || buildStatus == null)
+			{
+				Log("Error getting program build info (3.2)", err.ToString());
+				return null;
+			}
+			if (buildStatus.Length > 0)
+			{
+				Log("Program build status", BitConverter.ToInt32(buildStatus, 0).ToString());
+			}
+			else
+			{
+				Log("No build status available");
+			}
+
+			// Build info log
+			err = CL.GetProgramBuildInfo(program.Value, Dev.Value, ProgramBuildInfo.Log, out byte[]? log);
+			if (err != CLResultCode.Success || log == null)
+			{
+				Log("Error getting program build info (3.3)", err.ToString());
+				return null;
+			}
+			if (log.Length > 0)
+			{
+				Log("Program build log", Encoding.UTF8.GetString(log));
+			}
+			else
+			{
+				Log("No build log available");
+			}
+
+			// Build kernel
+			kernel = CL.CreateKernel(program.Value, kernelName, out err);
+			if (err != CLResultCode.Success || kernel == null)
+			{
+				Log("Error creating kernel (4)", err.ToString());
+				return null;
 			}
 
 			// Return
@@ -362,7 +470,8 @@ namespace TKKernels
 			// For every kernel path: Compile
 			foreach (string path in KernelPaths)
 			{
-				CLKernel? kernel = CompileKernel(path);
+				string? kernelString = ReadKernelFile(path);
+				CLKernel? kernel = CompileKernel(kernelString);
 				if (kernel != null)
 				{
 					kernels.Add(kernel.Value);
@@ -371,6 +480,19 @@ namespace TKKernels
 
 			// Return
 			return kernels;
+		}
+
+		public void ReCompileAll(bool log = false)
+		{
+			// Set Kernels & Log
+			if (Ctx != null && Dev != null)
+			{
+				Kernels = CompileAllPaths();
+				if (log)
+				{
+					LogEveryKernel();
+				}
+			}
 		}
 
 
@@ -399,7 +521,7 @@ namespace TKKernels
 			for (int i = 0; i < buffers.Length; i++)
 			{
 				// Set input buffer
-				CLResultCode err = CL.SetKernelArg(kernel, 1, buffers[i]);
+				CLResultCode err = CL.SetKernelArg(kernel, 0, buffers[i]);
 				if (err != CLResultCode.Success)
 				{
 					Log("Error setting kernel argument: pointer array", err.ToString());
@@ -407,7 +529,7 @@ namespace TKKernels
 				}
 
 				// Set length
-				err = CL.SetKernelArg(kernel, 2, sizes[i]);
+				err = CL.SetKernelArg(kernel, 1, sizes[i]);
 				if (err != CLResultCode.Success)
 				{
 					Log("Error setting kernel argument: int length", err.ToString());

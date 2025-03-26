@@ -60,7 +60,7 @@ namespace TKKernels
 		public void Log(string message, string inner = "", int layer = 1, bool update = false)
 		{
 			string msg = "[" + DateTime.Now.ToString("HH:mm:ss.fff") + "] ";
-			msg += "<CTX>";
+			msg += "<Context>";
 
 			for (int i = 0; i <= layer; i++)
 			{

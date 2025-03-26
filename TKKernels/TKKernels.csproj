@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Kernels\" />
+    <Folder Include="Logs\" />
   </ItemGroup>
 
 </Project>
