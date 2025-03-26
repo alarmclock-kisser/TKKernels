@@ -63,6 +63,9 @@ namespace TKKernels
 
 			// Select device
 			this.SelectDeviceLike("Intel");
+
+			// Load resources
+			this.LoadResources();
 		}
 
 
